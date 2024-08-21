@@ -105,56 +105,51 @@ const alertIconStyle = tva({
   },
 });
 
-const PrimitiveIcon = React.forwardRef(
-  (
-    {
-      height,
-      width,
-      fill,
-      color,
-      size,
-      stroke = 'currentColor',
-      as: AsComp,
-      ...props
-    }: any,
-    ref?: any
-  ) => {
-    const sizeProps = useMemo(() => {
-      if (size) return { size };
-      if (height && width) return { height, width };
-      if (height) return { height };
-      if (width) return { width };
-      return {};
-    }, [size, height, width]);
+type IPrimitiveIcon = React.ComponentPropsWithoutRef<typeof Svg> & {
+  height?: number | string;
+  width?: number | string;
+  fill?: string;
+  color?: string;
+  size?: number | string;
+  stroke?: string;
+  as?: React.ElementType;
+  className?: string;
+};
 
-    const colorProps =
-      stroke === 'currentColor' && color !== undefined ? color : stroke;
+const PrimitiveIcon = React.forwardRef<
+  React.ElementRef<typeof Svg>,
+  IPrimitiveIcon
+>(({ height, width, fill, color, size, stroke, as: AsComp, ...props }, ref) => {
+  const sizeProps = useMemo(() => {
+    if (size) return { size };
+    if (height && width) return { height, width };
+    if (height) return { height };
+    if (width) return { width };
+    return {};
+  }, [size, height, width]);
 
-    if (AsComp) {
-      return (
-        <AsComp
-          ref={ref}
-          fill={fill}
-          {...props}
-          {...sizeProps}
-          stroke={colorProps}
-        />
-      );
-    }
-    return (
-      <Svg
-        ref={ref}
-        height={height}
-        width={width}
-        fill={fill}
-        stroke={colorProps}
-        {...props}
-      />
-    );
+  let colorProps = {};
+  if (color) {
+    colorProps = { ...colorProps, color: color };
   }
-);
+  if (stroke) {
+    colorProps = { ...colorProps, stroke: stroke };
+  }
+  if (fill) {
+    colorProps = { ...colorProps, fill: fill };
+  }
+  if (AsComp) {
+    return <AsComp ref={ref} {...sizeProps} {...colorProps} {...props} />;
+  }
+  return (
+    <Svg ref={ref} height={height} width={width} {...colorProps} {...props} />
+  );
+});
 
-const IconWrapper = React.forwardRef(({ ...props }: any, ref?: any) => {
+const IconWrapper = React.forwardRef<
+  React.ElementRef<typeof PrimitiveIcon>,
+  IPrimitiveIcon
+>(({ ...props }, ref) => {
   return <PrimitiveIcon {...props} ref={ref} />;
 });
 
@@ -181,18 +176,14 @@ cssInterop(IconWrapper, {
   },
 });
 
-type IAlertProps = Omit<React.ComponentProps<typeof UIAlert>, 'context'> &
+type IAlertProps = Omit<
+  React.ComponentPropsWithoutRef<typeof UIAlert>,
+  'context'
+> &
   VariantProps<typeof alertStyle>;
-const Alert = React.forwardRef(
-  (
-    {
-      className,
-      variant = 'solid',
-      action = 'info',
-      ...props
-    }: { className?: string } & IAlertProps,
-    ref?: any
-  ) => {
+
+const Alert = React.forwardRef<React.ElementRef<typeof UIAlert>, IAlertProps>(
+  ({ className, variant = 'solid', action = 'muted', ...props }, ref) => {
     return (
       <UIAlert
         className={alertStyle({ action, variant, class: className })}
@@ -204,9 +195,13 @@ const Alert = React.forwardRef(
   }
 );
 
-type IAlertTextProps = React.ComponentProps<typeof UIAlert.Text> &
+type IAlertTextProps = React.ComponentPropsWithoutRef<typeof UIAlert.Text> &
   VariantProps<typeof alertTextStyle>;
-const AlertText = React.forwardRef(
+
+const AlertText = React.forwardRef<
+  React.ElementRef<typeof UIAlert.Text>,
+  IAlertTextProps
+>(
   (
     {
       className,
@@ -219,13 +214,12 @@ const AlertText = React.forwardRef(
       italic,
       highlight,
       ...props
-    }: { className?: string } & IAlertTextProps,
-    ref?: any
+    },
+    ref
   ) => {
     const { action: parentAction } = useStyleContext(SCOPE);
     return (
       <UIAlert.Text
-        // @ts-ignore
         className={alertTextStyle({
           isTruncated,
           bold,
@@ -247,57 +241,50 @@ const AlertText = React.forwardRef(
   }
 );
 
-type IAlertIconProps = React.ComponentProps<typeof UIAlert.Icon> &
+type IAlertIconProps = React.ComponentPropsWithoutRef<typeof UIAlert.Icon> &
   VariantProps<typeof alertIconStyle>;
-const AlertIcon = React.forwardRef(
-  (
-    {
-      className,
-      size = 'md',
-      ...props
-    }: {
-      className?: string;
-    } & IAlertIconProps,
-    ref?: any
-  ) => {
-    const { action: parentAction } = useStyleContext(SCOPE);
 
-    if (typeof size === 'number') {
-      return (
-        <UIAlert.Icon
-          ref={ref}
-          {...props}
-          className={alertIconStyle({ class: className })}
-          size={size}
-        />
-      );
-    } else if (
-      (props.height !== undefined || props.width !== undefined) &&
-      size === undefined
-    ) {
-      return (
-        <UIAlert.Icon
-          ref={ref}
-          {...props}
-          className={alertIconStyle({ class: className })}
-        />
-      );
-    }
+const AlertIcon = React.forwardRef<
+  React.ElementRef<typeof UIAlert.Icon>,
+  IAlertIconProps
+>(({ className, size = 'md', ...props }, ref) => {
+  const { action: parentAction } = useStyleContext(SCOPE);
+
+  if (typeof size === 'number') {
     return (
       <UIAlert.Icon
-        className={alertIconStyle({
-          parentVariants: {
-            action: parentAction,
-          },
-          size,
-          class: className,
-        })}
-        {...props}
         ref={ref}
+        {...props}
+        className={alertIconStyle({ class: className })}
+        size={size}
+      />
+    );
+  } else if (
+    (props.height !== undefined || props.width !== undefined) &&
+    size === undefined
+  ) {
+    return (
+      <UIAlert.Icon
+        ref={ref}
+        {...props}
+        className={alertIconStyle({ class: className })}
       />
     );
   }
-);
+  return (
+    <UIAlert.Icon
+      className={alertIconStyle({
+        parentVariants: {
+          action: parentAction,
+        },
+        size,
+        class: className,
+      })}
+      {...props}
+      ref={ref}
+    />
+  );
+});
 
 Alert.displayName = 'Alert';
 AlertText.displayName = 'AlertText';
